@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/twmb/franz-go/pkg/kadm"
 	"github.com/twmb/franz-go/pkg/kfake"
 	"github.com/twmb/franz-go/pkg/kgo"
 
@@ -141,5 +142,84 @@ func must(t *testing.T, err error) {
 	t.Helper()
 	if err != nil {
 		t.Fatal(err)
+	}
+}
+
+// A transactional producer ends the log with a commit or abort marker, which
+// is an offset no data record holds. Loading must reach past it, and the
+// records of an aborted transaction must never reach the cache.
+func TestConsumerLoadsPastTransactionMarkers(t *testing.T) {
+	cluster, err := kfake.NewCluster(kfake.NumBrokers(1), kfake.SeedTopics(1, productsTopic))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer cluster.Close()
+	brokers := cluster.ListenAddrs()
+	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
+	defer cancel()
+
+	prod, err := kgo.NewClient(kgo.SeedBrokers(brokers...), kgo.DefaultProduceTopic(productsTopic), kgo.TransactionalID("prague-test"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer prod.Close()
+	txn := func(commit kgo.TransactionEndTry, recs ...*kgo.Record) {
+		t.Helper()
+		must(t, prod.BeginTransaction())
+		must(t, prod.ProduceSync(ctx, recs...).FirstErr())
+		must(t, prod.EndTransaction(ctx, commit))
+	}
+	txn(kgo.TryCommit, &kgo.Record{Key: fixture(t, "product-full.key"), Value: fixture(t, "product-full.value")})
+	txn(kgo.TryAbort, &kgo.Record{Key: fixture(t, "product-sparse.key"), Value: fixture(t, "product-sparse.value")})
+
+	products := prague.New[int64, *shop.Product]("products")
+	c := kafka.NewConsumer(kafka.Config{Brokers: brokers, OnError: func(err error) { t.Errorf("consumer: %v", err) }})
+	must(t, kafka.Register(c, productsTopic, products))
+	go func() { _ = c.Run(ctx) }()
+
+	loadCtx, loadCancel := context.WithTimeout(ctx, 5*time.Second)
+	defer loadCancel()
+	if err := c.WaitLoaded(loadCtx); err != nil {
+		t.Fatalf("load did not reach past the abort marker: %v", err)
+	}
+	if _, ok := products.Get(42); !ok {
+		t.Fatal("the committed record is missing")
+	}
+	if _, ok := products.Get(7); ok || products.Len() != 1 {
+		t.Fatalf("an aborted record reached the cache: len %d", products.Len())
+	}
+}
+
+// A partition whose records retention or DeleteRecords removed has an end
+// offset but nothing left to read: it is loaded from the start.
+func TestConsumerLoadsAnEmptiedPartition(t *testing.T) {
+	cluster, err := kfake.NewCluster(kfake.NumBrokers(1), kfake.SeedTopics(1, productsTopic))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer cluster.Close()
+	brokers := cluster.ListenAddrs()
+	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
+	defer cancel()
+
+	prod, err := kgo.NewClient(kgo.SeedBrokers(brokers...), kgo.DefaultProduceTopic(productsTopic))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer prod.Close()
+	must(t, prod.ProduceSync(ctx, &kgo.Record{Key: fixture(t, "product-full.key"), Value: fixture(t, "product-full.value")}).FirstErr())
+	adm := kadm.NewClient(prod)
+	deleted, err := adm.DeleteRecords(ctx, kadm.Offsets{productsTopic: {0: kadm.Offset{At: 1}}})
+	must(t, err)
+	must(t, deleted.Error())
+
+	c := kafka.NewConsumer(kafka.Config{Brokers: brokers, OnError: func(err error) { t.Errorf("consumer: %v", err) }})
+	must(t, kafka.Register(c, productsTopic, prague.New[int64, *shop.Product]("products")))
+	go func() { _ = c.Run(ctx) }()
+
+	loadCtx, loadCancel := context.WithTimeout(ctx, 5*time.Second)
+	defer loadCancel()
+	if err := c.WaitLoaded(loadCtx); err != nil {
+		t.Fatalf("an emptied partition never loaded: %v", err)
 	}
 }

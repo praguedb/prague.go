@@ -82,8 +82,13 @@ is empty, the query returns before fetching anything.
   Prague's `HeadersSerDe` writes them: raw little-endian or MessagePack integers, UTF-8 strings,
   MessagePack for everything else. The headers and timestamp a type reads are part of its `Same`
   fingerprint, so a changed header is an `Update`.
+- Records are read committed, as Prague (.NET) reads them, so an aborted transaction's records
+  never reach a cache.
 - After-handlers fire only once the topic is loaded. A topic counts as loaded when every partition
-  has been read to the end offset seen at startup, so multi-partition topics load correctly.
+  has been read to the last stable offset seen at startup, so multi-partition topics load
+  correctly. Transaction markers are kept internally so a partition ending in a commit or abort
+  marker reaches its end, and a partition whose records retention or DeleteRecords removed counts
+  as loaded at once.
 - Topic templates resolve `[v:name]` from `Config.Vars` and `[e:NAME]` from the environment. A
   missing topic makes `Run` fail rather than wait.
 

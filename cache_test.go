@@ -168,8 +168,8 @@ func TestJoins(t *testing.T) {
 
 func TestResolveTopic(t *testing.T) {
 	t.Setenv("PRAGUE_ENV", "prod")
-	got, err := prague.ResolveTopic("Cache.[v:brandId].BetType.[e:PRAGUE_ENV]", map[string]string{"brandId": "7"})
-	if err != nil || got != "Cache.7.BetType.prod" {
+	got, err := prague.ResolveTopic("Cache.[v:brandId].TicketType.[e:PRAGUE_ENV]", map[string]string{"brandId": "7"})
+	if err != nil || got != "Cache.7.TicketType.prod" {
 		t.Fatalf("%q %v", got, err)
 	}
 	if _, err := prague.ResolveTopic("Cache.[v:missing]", nil); err == nil {

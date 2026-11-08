@@ -7,9 +7,12 @@
 // consumer group and no committed offsets, so every process holds the whole
 // topic and a restart is a full reload.
 //
-// A topic is loaded once every partition has been read up to the end offset
-// observed at startup. After-handlers fire only once a topic is loaded, so
-// they see live changes and not the replay.
+// Records are read committed, as Prague (.NET) reads them: an aborted
+// transaction's records never reach a cache.
+//
+// A topic is loaded once every partition has been read up to the last stable
+// offset observed at startup. After-handlers fire only once a topic is loaded,
+// so they see live changes and not the replay.
 package kafka
 
 import (
@@ -152,6 +155,11 @@ func (c *Consumer) Run(ctx context.Context) error {
 		kgo.SeedBrokers(c.cfg.Brokers...),
 		kgo.ConsumeTopics(topics...),
 		kgo.ConsumeResetOffset(kgo.NewOffset().AtStart()),
+		kgo.FetchIsolationLevel(kgo.ReadCommitted()),
+		// A transaction's commit or abort marker holds an offset no data
+		// record does, and is often the last one in a partition. Kept, it is
+		// what carries the read to the end offset; apply skips it.
+		kgo.KeepControlRecords(),
 	}, c.cfg.ClientOptions...)
 	cl, err := kgo.NewClient(opts...)
 	if err != nil {
@@ -193,7 +201,9 @@ func (c *Consumer) Run(ctx context.Context) error {
 				return
 			}
 			for _, r := range p.Records {
-				b.apply(r, live[p.Topic])
+				if !r.Attrs.IsControl() {
+					b.apply(r, live[p.Topic])
+				}
 				if parts, ok := pending[p.Topic]; ok && !live[p.Topic] {
 					if end, ok := parts[r.Partition]; ok && r.Offset+1 >= end {
 						delete(parts, r.Partition)
@@ -207,12 +217,22 @@ func (c *Consumer) Run(ctx context.Context) error {
 	}
 }
 
-// endOffsets is, per topic, the end offset of every non-empty partition: what
-// a topic must be read up to before it counts as loaded.
+// endOffsets is, per topic, the end offset of every partition that has
+// something to read: what a topic must be read up to before it counts as
+// loaded.
+//
+// The end is the last stable offset, the furthest a read-committed consumer
+// can reach; the high watermark lies past an open transaction and would hold
+// the load until it ends. A partition whose start has reached its end (its
+// records removed by retention or DeleteRecords) has nothing to read.
 func endOffsets(ctx context.Context, adm *kadm.Client, topics []string) (map[string]map[int32]int64, error) {
-	listed, err := adm.ListEndOffsets(ctx, topics...)
+	listed, err := adm.ListCommittedOffsets(ctx, topics...)
 	if err != nil {
 		return nil, fmt.Errorf("prague/kafka: list end offsets: %w", err)
+	}
+	starts, err := adm.ListStartOffsets(ctx, topics...)
+	if err != nil {
+		return nil, fmt.Errorf("prague/kafka: list start offsets: %w", err)
 	}
 	out := map[string]map[int32]int64{}
 	for _, t := range topics {
@@ -224,6 +244,9 @@ func endOffsets(ctx context.Context, adm *kadm.Client, topics []string) (map[str
 		for p, o := range parts {
 			if o.Err != nil {
 				return nil, fmt.Errorf("prague/kafka: topic %q partition %d: %w", t, p, o.Err)
+			}
+			if s, ok := starts.Lookup(t, p); ok && s.Err == nil && s.Offset >= o.Offset {
+				continue
 			}
 			if o.Offset > 0 {
 				out[t][p] = o.Offset
