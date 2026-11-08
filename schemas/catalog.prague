@@ -9,9 +9,7 @@ revision 1;
 // Tags are the C# [Key(N)] plus one. C#'s byte, short and ushort are int32
 // here: MessagePack writes an integer the same way whatever its C# width. A
 // C# float is double here for the same reason on the read side (a reader takes
-// a float32 as a float64). A DateOnly is int32: MessagePack-CSharp writes its
-// day number. A DateTime is int64: Prague writes DateTime.ToBinary(), the
-// ticks with the kind in the top two bits (protop has no temporal type yet).
+// a float32 as a float64). A DateTime is a timestamp and a DateOnly a date.
 namespace Catalog;
 
 // --- enums -------------------------------------------------------------------
@@ -104,8 +102,8 @@ table GenreInfo
   bool   is_archived = 4;
   int32  version     = 5;
 
-  int64  created_at = 6; // DateTime
-  int64  updated_at = 7; // DateTime
+  timestamp created_at = 6;
+  timestamp updated_at = 7;
 }
 
 table SourceInfo
@@ -118,8 +116,8 @@ table SourceInfo
   int32       version     = 4;
   SourceTypes types       = 7;
 
-  int64  created_at = 5; // DateTime
-  int64  updated_at = 6; // DateTime
+  timestamp created_at = 5;
+  timestamp updated_at = 6;
 }
 
 table CountryInfo
@@ -132,8 +130,8 @@ table CountryInfo
   int32   version      = 4;
   string? country_code = 7;
 
-  int64  created_at = 5; // DateTime
-  int64  updated_at = 6; // DateTime
+  timestamp created_at = 5;
+  timestamp updated_at = 6;
 }
 
 table TourInfo
@@ -147,8 +145,8 @@ table TourInfo
   bool   is_archived = 5;
   int32  version     = 6;
 
-  int64  created_at = 7; // DateTime
-  int64  updated_at = 8; // DateTime
+  timestamp created_at = 7;
+  timestamp updated_at = 8;
 }
 
 table ActInfo
@@ -168,8 +166,8 @@ table ActInfo
   bool    is_archived  = 11;
   int32   version      = 12;
 
-  int64  created_at = 13; // DateTime
-  int64  updated_at = 14; // DateTime
+  timestamp created_at = 13;
+  timestamp updated_at = 14;
 }
 
 table PerformerInfo
@@ -182,13 +180,13 @@ table PerformerInfo
   string? short_name    = 4;
   int32?  country_id    = 5;
   Gender  gender        = 6;
-  int32?  date_of_birth = 7; // DateOnly: its day number
+  date?  date_of_birth = 7;
   string? role          = 8;
   bool    is_archived   = 9;
   int32   version       = 10;
 
-  int64  created_at = 11; // DateTime
-  int64  updated_at = 12; // DateTime
+  timestamp created_at = 11;
+  timestamp updated_at = 12;
 }
 
 table VenueInfo
@@ -203,8 +201,8 @@ table VenueInfo
   bool    is_archived = 6;
   int32   version     = 7;
 
-  int64  created_at = 8; // DateTime
-  int64  updated_at = 9; // DateTime
+  timestamp created_at = 8;
+  timestamp updated_at = 9;
 }
 
 table EditionInfo
@@ -215,13 +213,13 @@ table EditionInfo
   uuid    tour_id     = 2 [references(TourInfo)];
   string  name        = 3;
   string? year        = 4;
-  int32?  start_date  = 5; // DateOnly: its day number
-  int32?  end_date    = 6; // DateOnly: its day number
+  date?  start_date  = 5;
+  date?  end_date    = 6;
   bool    is_archived = 7;
   int32   version     = 8;
 
-  int64  created_at = 9; // DateTime
-  int64  updated_at = 10; // DateTime
+  timestamp created_at = 9;
+  timestamp updated_at = 10;
 }
 
 // One show: two acts of a genre on a tour, at a time and place.
@@ -240,10 +238,10 @@ table ShowInfo
   bool   is_archived  = 11;
   int32  version      = 12;
 
-  int64? scheduled_start = 9;  // DateTime?, UTC; null when not yet scheduled
-  int64? scheduled_end   = 10; // DateTime?
-  int64  created_at      = 13; // DateTime
-  int64  updated_at      = 14; // DateTime
+  timestamp? scheduled_start = 9;
+  timestamp? scheduled_end   = 10;
+  timestamp created_at = 13;
+  timestamp updated_at = 14;
 }
 
 // --- mappings: a source's ids onto ours, one cache per kind -------------------
@@ -269,8 +267,8 @@ table GenreMappingInfo
   MappingMethod method        = 7;
   double?       score         = 8; // C# float?
 
-  int64  created_at = 4; // DateTime
-  int64  updated_at = 5; // DateTime
+  timestamp created_at = 4;
+  timestamp updated_at = 5;
 }
 
 table ActMappingInfo
@@ -284,8 +282,8 @@ table ActMappingInfo
   MappingMethod method        = 7;
   double?       score         = 8; // C# float?
 
-  int64  created_at = 4; // DateTime
-  int64  updated_at = 5; // DateTime
+  timestamp created_at = 4;
+  timestamp updated_at = 5;
 }
 
 table EditionMappingInfo
@@ -299,8 +297,8 @@ table EditionMappingInfo
   MappingMethod method        = 7;
   double?       score         = 8; // C# float?
 
-  int64  created_at = 4; // DateTime
-  int64  updated_at = 5; // DateTime
+  timestamp created_at = 4;
+  timestamp updated_at = 5;
 }
 
 table ShowMappingInfo
@@ -314,8 +312,8 @@ table ShowMappingInfo
   MappingMethod method        = 7;
   double?       score         = 8; // C# float?
 
-  int64  created_at = 4; // DateTime
-  int64  updated_at = 5; // DateTime
+  timestamp created_at = 4;
+  timestamp updated_at = 5;
 }
 
 // --- ticket-type catalogue ----------------------------------------------------
@@ -331,8 +329,8 @@ table TierFamilyInfo
   bool   is_archived = 5;
   int32  version     = 6;
 
-  int64  created_at = 7; // DateTime
-  int64  updated_at = 8; // DateTime
+  timestamp created_at = 7;
+  timestamp updated_at = 8;
 }
 
 // A ticket type's slot: its role, and a PICK's label.
@@ -366,9 +364,9 @@ table TicketTypeInfo
   int32?               set_id            = 15; // short?
   list<AttributeField> ticket_attributes = 16;
 
-  int64 published_at = 10; // DateTime
-  int64 created_at   = 13; // DateTime
-  int64 updated_at   = 14; // DateTime
+  timestamp published_at = 10;
+  timestamp created_at = 13;
+  timestamp updated_at = 14;
 }
 
 // A set, by its genre and its id within it.
@@ -392,8 +390,8 @@ table SetInfo
   bool    is_archived = 8;
   int32   version     = 9;
 
-  int64  created_at = 10; // DateTime
-  int64  updated_at = 11; // DateTime
+  timestamp created_at = 10;
+  timestamp updated_at = 11;
 }
 
 // --- not a cache: a stream of requests to map a source entity ----------------

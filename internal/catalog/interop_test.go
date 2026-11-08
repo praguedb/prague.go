@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 	"reflect"
 	"testing"
+	"time"
 
 	"github.com/vmihailenco/msgpack/v5"
 
@@ -42,11 +43,11 @@ var (
 	edition = wire.MustUUID("9a8b7c6d-5e4f-4a3b-8c2d-1e0f9a8b7c6d")
 )
 
-// DateTime.ToBinary() of UTC instants: ticks with the Utc kind in bit 62.
-const (
-	created  = 5250714242427387904 // 2026-01-01
-	updated  = 5250715106427387904 // 2026-01-02
-	starting = 5250873956427387904 // 2026-07-04 20:30
+// The producer writes these as DateTime.ToBinary() with the Utc kind.
+var (
+	created  = wire.TimestampOf(time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC))
+	updated  = wire.TimestampOf(time.Date(2026, 1, 2, 0, 0, 0, 0, time.UTC))
+	starting = wire.TimestampOf(time.Date(2026, 7, 4, 20, 30, 0, 0, time.UTC))
 )
 
 const (
@@ -87,7 +88,7 @@ func TestKnowledgeBase(t *testing.T) {
 	})
 	eq(t, "performer", decode[catalog.PerformerInfo](t, "performer.value"), catalog.PerformerInfo{
 		Id: performer, GenreId: 3, Name: "Rosa Almeida", ShortName: ptr("R. Almeida"), CountryId: ptr[int32](44),
-		Gender: catalog.GenderFemale, DateOfBirth: ptr[int32](728064), Role: ptr("vocals"),
+		Gender: catalog.GenderFemale, DateOfBirth: ptr(wire.DateOf(1994, time.May, 17)), Role: ptr("vocals"),
 		Version: 1, CreatedAt: created, UpdatedAt: updated,
 	})
 	eq(t, "venue", decode[catalog.VenueInfo](t, "venue.value"), catalog.VenueInfo{
@@ -95,13 +96,13 @@ func TestKnowledgeBase(t *testing.T) {
 		Version: 1, CreatedAt: created, UpdatedAt: updated,
 	})
 	eq(t, "edition", decode[catalog.EditionInfo](t, "edition.value"), catalog.EditionInfo{
-		Id: edition, TourId: tour, Name: "Summer Arena Tour 2026", Year: ptr("2026"), StartDate: ptr[int32](739767),
+		Id: edition, TourId: tour, Name: "Summer Arena Tour 2026", Year: ptr("2026"), StartDate: ptr(wire.DateOf(2026, time.June, 1)),
 		Version: 1, CreatedAt: created, UpdatedAt: updated,
 	})
 	got := decode[catalog.ShowInfo](t, "show.value")
 	eq(t, "show", got, catalog.ShowInfo{
 		Id: show, GenreId: 3, CountryId: 44, TourId: tour, EditionId: &edition, VenueId: ptr[int64](venue),
-		HeadlinerId: act1, OpenerId: act2, ScheduledStart: ptr[int64](starting),
+		HeadlinerId: act1, OpenerId: act2, ScheduledStart: &starting,
 		Version: 2, CreatedAt: created, UpdatedAt: updated,
 	})
 	eq(t, "show cache key", got.CacheKey(), int64(show))
