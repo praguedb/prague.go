@@ -106,8 +106,8 @@ type GenreInfo struct {
 	Name       string
 	IsArchived bool
 	Version    int32
-	CreatedAt  int64
-	UpdatedAt  int64
+	CreatedAt  wire.Timestamp
+	UpdatedAt  wire.Timestamp
 }
 
 // DecodeMsgpack reads GenreInfo from its MessagePack array, by index, skipping unknown slots.
@@ -151,8 +151,8 @@ type SourceInfo struct {
 	IsArchived bool
 	Version    int32
 	Types      SourceTypes
-	CreatedAt  int64
-	UpdatedAt  int64
+	CreatedAt  wire.Timestamp
+	UpdatedAt  wire.Timestamp
 }
 
 // DecodeMsgpack reads SourceInfo from its MessagePack array, by index, skipping unknown slots.
@@ -196,8 +196,8 @@ type CountryInfo struct {
 	IsArchived  bool
 	Version     int32
 	CountryCode *string
-	CreatedAt   int64
-	UpdatedAt   int64
+	CreatedAt   wire.Timestamp
+	UpdatedAt   wire.Timestamp
 }
 
 // DecodeMsgpack reads CountryInfo from its MessagePack array, by index, skipping unknown slots.
@@ -242,8 +242,8 @@ type TourInfo struct {
 	Name       string
 	IsArchived bool
 	Version    int32
-	CreatedAt  int64
-	UpdatedAt  int64
+	CreatedAt  wire.Timestamp
+	UpdatedAt  wire.Timestamp
 }
 
 // DecodeMsgpack reads TourInfo from its MessagePack array, by index, skipping unknown slots.
@@ -296,8 +296,8 @@ type ActInfo struct {
 	IsVirtual    bool
 	IsArchived   bool
 	Version      int32
-	CreatedAt    int64
-	UpdatedAt    int64
+	CreatedAt    wire.Timestamp
+	UpdatedAt    wire.Timestamp
 }
 
 // DecodeMsgpack reads ActInfo from its MessagePack array, by index, skipping unknown slots.
@@ -356,12 +356,12 @@ type PerformerInfo struct {
 	ShortName   *string
 	CountryId   *int32
 	Gender      Gender
-	DateOfBirth *int32
+	DateOfBirth *wire.Date
 	Role        *string
 	IsArchived  bool
 	Version     int32
-	CreatedAt   int64
-	UpdatedAt   int64
+	CreatedAt   wire.Timestamp
+	UpdatedAt   wire.Timestamp
 }
 
 // DecodeMsgpack reads PerformerInfo from its MessagePack array, by index, skipping unknown slots.
@@ -417,8 +417,8 @@ type VenueInfo struct {
 	Capacity   *int32
 	IsArchived bool
 	Version    int32
-	CreatedAt  int64
-	UpdatedAt  int64
+	CreatedAt  wire.Timestamp
+	UpdatedAt  wire.Timestamp
 }
 
 // DecodeMsgpack reads VenueInfo from its MessagePack array, by index, skipping unknown slots.
@@ -465,12 +465,12 @@ type EditionInfo struct {
 	TourId     wire.UUID
 	Name       string
 	Year       *string
-	StartDate  *int32
-	EndDate    *int32
+	StartDate  *wire.Date
+	EndDate    *wire.Date
 	IsArchived bool
 	Version    int32
-	CreatedAt  int64
-	UpdatedAt  int64
+	CreatedAt  wire.Timestamp
+	UpdatedAt  wire.Timestamp
 }
 
 // DecodeMsgpack reads EditionInfo from its MessagePack array, by index, skipping unknown slots.
@@ -525,10 +525,10 @@ type ShowInfo struct {
 	OpenerId       int64
 	IsArchived     bool
 	Version        int32
-	ScheduledStart *int64
-	ScheduledEnd   *int64
-	CreatedAt      int64
-	UpdatedAt      int64
+	ScheduledStart *wire.Timestamp
+	ScheduledEnd   *wire.Timestamp
+	CreatedAt      wire.Timestamp
+	UpdatedAt      wire.Timestamp
 }
 
 // DecodeMsgpack reads ShowInfo from its MessagePack array, by index, skipping unknown slots.
@@ -614,8 +614,8 @@ type GenreMappingInfo struct {
 	ProviderName *string
 	Method       MappingMethod
 	Score        *float64
-	CreatedAt    int64
-	UpdatedAt    int64
+	CreatedAt    wire.Timestamp
+	UpdatedAt    wire.Timestamp
 }
 
 // DecodeMsgpack reads GenreMappingInfo from its MessagePack array, by index, skipping unknown slots.
@@ -662,8 +662,8 @@ type ActMappingInfo struct {
 	ProviderName *string
 	Method       MappingMethod
 	Score        *float64
-	CreatedAt    int64
-	UpdatedAt    int64
+	CreatedAt    wire.Timestamp
+	UpdatedAt    wire.Timestamp
 }
 
 // DecodeMsgpack reads ActMappingInfo from its MessagePack array, by index, skipping unknown slots.
@@ -710,8 +710,8 @@ type EditionMappingInfo struct {
 	ProviderName *string
 	Method       MappingMethod
 	Score        *float64
-	CreatedAt    int64
-	UpdatedAt    int64
+	CreatedAt    wire.Timestamp
+	UpdatedAt    wire.Timestamp
 }
 
 // DecodeMsgpack reads EditionMappingInfo from its MessagePack array, by index, skipping unknown slots.
@@ -758,8 +758,8 @@ type ShowMappingInfo struct {
 	ProviderName *string
 	Method       MappingMethod
 	Score        *float64
-	CreatedAt    int64
-	UpdatedAt    int64
+	CreatedAt    wire.Timestamp
+	UpdatedAt    wire.Timestamp
 }
 
 // DecodeMsgpack reads ShowMappingInfo from its MessagePack array, by index, skipping unknown slots.
@@ -806,8 +806,8 @@ type TierFamilyInfo struct {
 	Description string
 	IsArchived  bool
 	Version     int32
-	CreatedAt   int64
-	UpdatedAt   int64
+	CreatedAt   wire.Timestamp
+	UpdatedAt   wire.Timestamp
 }
 
 // DecodeMsgpack reads TierFamilyInfo from its MessagePack array, by index, skipping unknown slots.
@@ -915,9 +915,9 @@ type TicketTypeInfo struct {
 	Version          int32
 	SetId            *int32
 	TicketAttributes []AttributeField
-	PublishedAt      int64
-	CreatedAt        int64
-	UpdatedAt        int64
+	PublishedAt      wire.Timestamp
+	CreatedAt        wire.Timestamp
+	UpdatedAt        wire.Timestamp
 }
 
 // DecodeMsgpack reads TicketTypeInfo from its MessagePack array, by index, skipping unknown slots.
@@ -1010,8 +1010,8 @@ type SetInfo struct {
 	Position   int32
 	IsArchived bool
 	Version    int32
-	CreatedAt  int64
-	UpdatedAt  int64
+	CreatedAt  wire.Timestamp
+	UpdatedAt  wire.Timestamp
 }
 
 // DecodeMsgpack reads SetInfo from its MessagePack array, by index, skipping unknown slots.
